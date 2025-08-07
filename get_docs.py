@@ -164,73 +164,74 @@ class DocumentCollector:
         return processed_chunks
 
 
-def main(docs_path: Path = None):
-    # Initialize the document processing class and pass the documents path if defined, otherwise use default "docs"
-    if docs_path:
-        doc_collector = DocumentCollector(docs_path)
-    doc_collector = DocumentCollector()
+    def main(self, docs_path: Path = None):
+        # Initialize the document processing class and pass the documents path if defined, otherwise use default "docs"
+        if docs_path:
+            doc_collector = DocumentCollector(docs_path)
+        doc_collector = DocumentCollector()
 
-    # Loop through the folders in the documents path
-    all_chunks = []
-    for folder in doc_collector.docs_path.iterdir():
-        source = folder.name
+        # Loop through the folders in the documents path
+        all_chunks = []
+        for folder in doc_collector.docs_path.iterdir():
+            source = folder.name
 
-        # Loop through the documents in the folder
-        for doc in folder.iterdir():
-            doc_data = {'metadata': {}, 'content': str}
-            doc_id = doc.name
-            # OCR the document
-            try:
-                print(f"Trying to OCR the document: {doc_id}.")
-                doc_ocr = doc_collector.ocr_document(doc)
-                if not doc_ocr.get("TEXT"):
-                    raise ValueError
-                else:
-                    print(f"Successfully OCR the document: {doc_id}.\n")
-            except ValueError as e:
+            # Loop through the documents in the folder
+            for doc in folder.iterdir():
+                doc_data = {'metadata': {}, 'content': str}
+                doc_id = doc.name
+                # OCR the document
                 try:
-                    # If fails with pdfplumber use google vision
-                    doc_ocr = doc_collector.ocr_document(doc, use_google_vision=True)
+                    print(f"Trying to OCR the document: {doc_id}.")
+                    doc_ocr = doc_collector.ocr_document(doc)
                     if not doc_ocr.get("TEXT"):
                         raise ValueError
                     else:
                         print(f"Successfully OCR the document: {doc_id}.\n")
                 except ValueError as e:
-                    print("Could not OCR the document using Google LLM, trying with Local LLM.\n\n")
                     try:
-                        # If fails with google vision or gcloud isn't initialized use local llm
-                        doc_ocr = doc_collector.ocr_document(doc, use_local_llm=True)
+                        # If fails with pdfplumber use google vision
+                        doc_ocr = doc_collector.ocr_document(doc, use_google_vision=True)
                         if not doc_ocr.get("TEXT"):
                             raise ValueError
                         else:
                             print(f"Successfully OCR the document: {doc_id}.\n")
                     except ValueError as e:
-                        print("Could not OCR the document using Local LLM, trying next document.\n\n")
-                        continue
+                        print("Could not OCR the document using Google LLM, trying with Local LLM.\n\n")
+                        try:
+                            # If fails with google vision or gcloud isn't initialized use local llm
+                            doc_ocr = doc_collector.ocr_document(doc, use_local_llm=True)
+                            if not doc_ocr.get("TEXT"):
+                                raise ValueError
+                            else:
+                                print(f"Successfully OCR the document: {doc_id}.\n")
+                        except ValueError as e:
+                            print("Could not OCR the document using Local LLM, trying next document.\n\n")
+                            continue
 
-            # Store the OCR data
-            doc_data['metadata'] = {
-                'source': source,
-                'doc_id': doc_id,
-                'title': doc_ocr.get("METADATA", {}).get("Title", ""),
-                'date': doc_ocr.get("METADATA", {}).get("CreationDate", ""),
-                'authors': doc_ocr.get("METADATA", {}).get("AUTHORS", ""),
-                'doc_type': doc_ocr.get("METADATA", {}).get("Type", "Report"),
-                'abstract': doc_ocr.get("METADATA", {}).get("INTRO", ""),
+                # Store the OCR data
+                doc_data['metadata'] = {
+                    'source': source,
+                    'doc_id': doc_id,
+                    'title': doc_ocr.get("METADATA", {}).get("Title", ""),
+                    'date': doc_ocr.get("METADATA", {}).get("CreationDate", ""),
+                    'authors': doc_ocr.get("METADATA", {}).get("AUTHORS", ""),
+                    'doc_type': doc_ocr.get("METADATA", {}).get("Type", "Report"),
+                    'abstract': doc_ocr.get("METADATA", {}).get("INTRO", ""),
 
-            }
-            doc_data['content'] = doc_ocr.get("TEXT")
-            del doc_ocr  # Free up RAM
+                }
+                doc_data['content'] = doc_ocr.get("TEXT")
+                del doc_ocr  # Free up RAM
 
-            # Process the document into chunks
-            print(f"Processing document {doc_id} into chunks.")
-            chunks = doc_collector.process_document(doc_data.get("content", ""), doc_data.get("metadata", {}))
-            all_chunks.extend(chunks)
-            print(f"Finished chunking document {doc_id} into {len(chunks)} chunks.\n\n")
-    return all_chunks
+                # Process the document into chunks
+                print(f"Processing document {doc_id} into chunks.")
+                chunks = doc_collector.process_document(doc_data.get("content", ""), doc_data.get("metadata", {}))
+                all_chunks.extend(chunks)
+                print(f"Finished chunking document {doc_id} into {len(chunks)} chunks.\n\n")
+        return all_chunks
 
 if __name__ == "__main__":
-    chunks = main()
+    doc_collector = DocumentCollector()
+    chunks = doc_collector.main()
     print("\nSample chunk:")
     sample_chunk = chunks[0]
     for key, value in sample_chunk.items():
