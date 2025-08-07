@@ -1,20 +1,11 @@
-import pandas as pd
-import numpy as np
-from neo4j import GraphDatabase
-import spacy
-# from langchain.llms import OpenAI
-# from langchain.embeddings import HuggingFaceEmbeddings
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
-from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
 import requests
 import os
-from typing import List, Dict, Tuple
 import json
-from datetime import datetime
-import re
-import ollama
 from get_data import WorldBankDataCollector
+from get_docs import DocumentCollector
+from make_graph import EconGraphBuilder
+from vector_store import VectorStoreManager
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -25,24 +16,11 @@ config = json.load(open('config.json'))
 countries = config.get("COUNTRIES", {}).get("ISO2", [])
 indicators = config.get("INDICATORS", {}).get("WB_CODE", [])
 
-# Initialize components
-nlp = spacy.load("en_core_web_sm")  # Used for extracting words from documents
-
 # Embeddings
 # embeddings = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en-v1.5")
-embeddings = OllamaEmbeddings(model="dengcao/Qwen3-Embedding-4B:Q4_K_M",)
 
 # LLM
-# llm = OpenAI(temperature=0.1)  # Need API key
 llm = OllamaLLM(model="gpt-oss:latest", temperature=0.1)  # We use a lower temperature to reduce hallucinations for factual economic analysis
-
-# DB - Neo4j for graph storage and Qdrant for vector storage
-neo4j_driver = GraphDatabase.driver(
-    "bolt://localhost:7687",
-    auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD"))
-)
-qdrant_client = QdrantClient(path=os.getenv("QDRANT_PATH"))
-
 
 # Scrape the data
 wb_collector = WorldBankDataCollector()
@@ -56,3 +34,23 @@ print(f"Collected {len(wdi_data)} data points.")
 print("\nSample data:")
 print(wdi_data.head())
 print(wdi_data.describe())
+
+# Get document chunks
+doc_collector = DocumentCollector()
+all_chunks = doc_collector.main()
+print("\nSample chunk:")
+sample_chunk = all_chunks[0]
+for key, value in sample_chunk.items():
+    if key == 'content':
+        print(f"{key}: {value[:100]}...")  # Truncate content for display
+    else:
+        print(f"{key}: {value}")
+
+# Build the knowledge graph
+graph_builder = EconGraphBuilder()
+graph_builder.create_structured_nodes(wdi_data)
+graph_builder.create_document_nodes(all_chunks)
+
+# Setup vector store and push document chunks to the vector db
+vector_manager = VectorStoreManager()
+vector_manager.embed_documents(all_chunks)
