@@ -1,0 +1,41 @@
+{
+  "COUNTRIES": {
+    "NAME": [
+      "Thailand",
+      "Malaysia",
+      "Indonesia",
+      "Vietnam",
+      "Singapore"
+    ],
+    "ISO2": [
+      "TH",
+      "MY",
+      "ID",
+      "VN",
+      "SG"
+    ],
+    "ISO3": [
+      "THA",
+      "MYS",
+      "IDN",
+      "VNM",
+      "SGP"
+    ]
+  },
+  "INDICATORS": {
+    "NAME": [
+      "GDP Growth (annual %)",
+      "Inflation, consumer price (annual %)",
+      "Unemployment, total (% of total labor force)",
+      "Trade (% of GDP)",
+      "Central government debt, total (% of GDP)"
+    ],
+    "WB_CODE": [
+      "NY.GDP.MKTP.KD.ZG",
+      "FP.CPI.TOTL.ZG",
+      "SL.UEM.TOTL.ZS",
+      "NE.TRD.GNFS.ZS",
+      "GC.DOD.TOTL.GD.ZS"
+    ]
+  }
+}
