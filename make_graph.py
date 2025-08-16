@@ -131,34 +131,43 @@ class EconGraphBuilder:
             valid_data = wdi_data.dropna(subset=['value'])
             print(f"Creating {len(valid_data)} data points with relationships...")
 
-            for i, row in valid_data.iterrows():
-                session.run(
-                    """
+            for counter, (_, row) in enumerate(valid_data.iterrows()):
+                try:
+                    # Create DataPoint with explicit property setting
+                    session.run(
+                        """
                         MATCH (c:Country {code: $country_code})
                         MATCH (i:Indicator {code: $indicator_code})
                         MATCH (y:Year {value: $year})
-                        
+
                         MERGE (dp:DataPoint {
                             country_code: $country_code,
                             indicator_code: $indicator_code,
-                            year: $year,
+                            year: $year
                         })
-                        
-                        SET dp.value = $value, dp.last_updated = datetime()
-                        
+                        SET dp.value = $value,
+                            dp.last_updated = datetime()
+
                         MERGE (c)-[:HAS_DATA_POINT]->(dp)
                         MERGE (dp)-[:MEASURES]->(i)
                         MERGE (dp)-[:FOR_YEAR]->(y)
-                    """,
-                    country_code=row['country_code'],
-                    indicator_code=row['indicator_code'],
-                    year=int(row['year']),
-                    value=float(row['value']),
-                )
+                        """,
+                        country_code=row['country_code'],
+                        indicator_code=row['indicator_code'],
+                        year=int(row['year']),
+                        value=float(row['value'])
+                    )
+                except Exception as e:
+                    print(f"Error processing row {i}: {e}")
+                    print(f"Row data: {dict(row)}")
+                    break
 
-                # Progress indicator for large datasets
-                if i % 100 == 0:
-                    print(f"   Processsed {i}/{len(valid_data)} data points...")
+                    # Progress indicator for large datasets
+                if counter % 100 == 0:
+                    print(f"   Processed {counter}/{len(valid_data)} data points...")
+
+                # Final progress update
+                print(f"   Processed {len(valid_data)}/{len(valid_data)} data points...")
 
         print("✓ Structured data nodes created successfully")
 
@@ -199,12 +208,15 @@ class EconGraphBuilder:
     def create_document_nodes(self, chunks: List[Dict]):
         """Create document nodes and extract entities"""
         with self.driver.session() as session:
-            for chunk in chunks:
+            for i, chunk in enumerate(chunks):
+                print("Processing document chunks into nodes...")
                 # Create document chunk node
                 session.run(
                     """
                         MERGE (d:Document {doc_id: $doc_id})
-                        SET d.title = $title, d.content = $content, d.chunk_id = $chunk_id
+                        SET d.title = $title, 
+                            d.content = $content,
+                            d.chunk_id = $chunk_id
                     """,
                     **chunk
                 )
@@ -221,7 +233,7 @@ class EconGraphBuilder:
                             MERGE (d)-[:MENTIONS]->(c)
                         """,
                         chunk_id=chunk["chunk_id"],
-                        country=country,
+                        country=country
                     )
 
                 # Create economic concept nodes
@@ -233,7 +245,7 @@ class EconGraphBuilder:
                             MERGE (d)-[:DISCUSSES]->(ec)
                         """,
                         chunk_id=chunk["chunk_id"],
-                        term=term,
+                        term=term
                     )
 
                 # Create event nodes
@@ -245,6 +257,12 @@ class EconGraphBuilder:
                             MERGE (d)-[:DESCRIBES]->(e)
                         """,
                         chunk_id=chunk["chunk_id"],
-                        event=event,
+                        event=event
                     )
+
+                # Progress tracking
+                if i % 100 == 0 or i == len(chunks) - 1:  # Update every 5 chunks since there are fewer documents
+                    entities_found = len(countries) + len(economic_terms) + len(events)
+                    print(f"   Processed chunk {i + 1}/{len(chunks)} - Found {entities_found} entities")
+
         print("Document nodes and entity relationships created successfully")
