@@ -153,9 +153,10 @@ class DocumentCollector:
             # Create chunk with a unique ID and inhereited metadata
             chunk_data = {
                 'content': chunk,
-                'chunk_id': f"{doc_metadata['doc_id']}_chunk_{i}",
-                'source': doc_metadata['source'],
-                'title': doc_metadata['title'],
+                'doc_id': doc_metadata.get('doc_id'),
+                'chunk_id': f"{doc_metadata.get('doc_id')}_chunk_{i}",
+                'source': doc_metadata.get('source', ''),
+                'title': doc_metadata.get('title', ''),
                 'date': doc_metadata.get('date', ''),
                 'author': doc_metadata.get('author', ''),
                 'doc_type': doc_metadata.get('doc_type', 'report'),
@@ -217,7 +218,6 @@ class DocumentCollector:
                     'authors': doc_ocr.get("METADATA", {}).get("AUTHORS", ""),
                     'doc_type': doc_ocr.get("METADATA", {}).get("Type", "Report"),
                     'abstract': doc_ocr.get("METADATA", {}).get("INTRO", ""),
-
                 }
                 doc_data['content'] = doc_ocr.get("TEXT")
                 del doc_ocr  # Free up RAM
