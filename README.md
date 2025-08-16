@@ -1,6 +1,11 @@
+![images](https://datasen.net/wp-content/uploads/2024/03/data_sense-e1710604295341.png)
+
 # GraphRAG for Economic Analysis
 
 This project demonstrates a Retrieval-Augmented Generation (RAG) system using a Knowledge Graph to analyze economic data and documents. It leverages structured data from the World Bank and unstructured data from PDF reports to answer complex economic questions.
+
+For a detailed walkthrough of this project, please refer to the tutorial on our blog: [How to Use GraphRAG for Economic Data Analysis](https://datasen.net/2025/08/16/how-to-use-graphrag-for-economic-data-analysis-tutorial/).
+
 
 ## Features
 
