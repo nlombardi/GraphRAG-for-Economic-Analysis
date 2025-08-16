@@ -1,8 +1,4 @@
-<<<<<<< README.md
 ![image](https://datasen.net/wp-content/uploads/2024/03/data_sense-e1710604295341.png)
-=======
-![image](https://datasen.net/wp-content/uploads/2024/03/data_sense-e1710604295341.png)
->>>>>>> README.md
 
 # GraphRAG for Economic Analysis
 
