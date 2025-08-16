@@ -2,3 +2,6 @@
 __pycache__
 .idea
 *.pdf
+/db/all_chunks.p
+/db/points.p
+/db/wdi_data.p
