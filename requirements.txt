@@ -11,3 +11,5 @@ spacy
 google-genai
 google-cloud-vision
 httpx
+graphdatascience
+neo4j_viz

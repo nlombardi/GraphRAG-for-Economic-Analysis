@@ -4,6 +4,8 @@ from get_docs import DocumentCollector
 from make_graph import EconGraphBuilder
 from vector_store import VectorStoreManager
 from graph_rag import EconGraphRag
+import pickle
+from pathlib import Path
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -29,7 +31,12 @@ print(wdi_data.describe())
 
 # Get document chunks
 doc_collector = DocumentCollector()
-all_chunks = doc_collector.main()
+
+chunks = pickle.load(open(Path.cwd() / 'db' / "all_chunks.p", "rb"))
+chunks_2 = pickle.load(open(Path.cwd() / 'db' / "all_chunks_2.p", "rb"))
+
+all_chunks = chunks + chunks_2
+# all_chunks = doc_collector.main()
 print("\nSample chunk:")
 sample_chunk = all_chunks[0]
 for key, value in sample_chunk.items():
@@ -45,14 +52,15 @@ graph_builder.create_document_nodes(all_chunks)
 
 # Setup vector store and push document chunks to the vector db
 vector_manager = VectorStoreManager()
-vector_manager.embed_documents(all_chunks)
+points = vector_manager.embed_documents_parallel(all_chunks)
 
 # Initialize GraphRAG system
 graph_rag = EconGraphRag()
 
+
 # Test questions
 test_questions = [
-    "What was Thailand's GDP growth in 2021, and what factors contributed to it?",
+    "What was Thailand's GDP growth in 2023, and what factors contributed to it?",
     "What is the middle classes debt situation in Thailand? Is it a problem?",
     "What economic challenges are facing South East Asian countries according to recent reports?",
     "What countries in ASEAN had the highest government debt levels and what were the underlying causes?"

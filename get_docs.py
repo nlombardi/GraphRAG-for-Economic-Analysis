@@ -5,6 +5,7 @@ from typing import List, Dict
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import pickle
 
 load_dotenv()
 
@@ -164,8 +165,7 @@ class DocumentCollector:
             processed_chunks.append(chunk_data)
         return processed_chunks
 
-
-    def main(self, docs_path: Path = None):
+    def main(self, docs_path: Path = None, skip: str = ""):
         # Initialize the document processing class and pass the documents path if defined, otherwise use default "docs"
         if docs_path:
             doc_collector = DocumentCollector(docs_path)
@@ -175,6 +175,8 @@ class DocumentCollector:
         all_chunks = []
         for folder in doc_collector.docs_path.iterdir():
             source = folder.name
+            if source == skip:
+                continue
 
             # Loop through the documents in the folder
             for doc in folder.iterdir():
@@ -229,9 +231,12 @@ class DocumentCollector:
                 print(f"Finished chunking document {doc_id} into {len(chunks)} chunks.\n\n")
         return all_chunks
 
+
 if __name__ == "__main__":
     doc_collector = DocumentCollector()
-    chunks = doc_collector.main()
+    chunks = doc_collector.main(skip="IMF")
+    with open(Path.cwd() / 'db' / 'all_chunks_2.p', 'wb') as f:
+        pickle.dump(chunks, f)
     print("\nSample chunk:")
     sample_chunk = chunks[0]
     for key, value in sample_chunk.items():

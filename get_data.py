@@ -11,50 +11,65 @@ class WorldBankDataCollector:
     construction.
     """
 
-    def __init__(self):
+    def __init__(self, timeout: int = 30):
         self.base_url = "https://api.worldbank.org/v2"
+        self.timeout = timeout
 
-    def get_indicators(self, countries: List[str], indicators: List[str],
-                       start_year: int = 2010, end_year: int = 2024) -> pd.DataFrame:
-        """
-        Get the WDI data for specified countries and indicators.
+    def get_indicators(
+            self,
+            countries: List[str],
+            indicators: List[str],
+            start_year: int = 2010,
+            end_year: int = 2024
+    ) -> pd.DataFrame:
 
-        :param countries: List of countries to collect data for.
-        :param indicators: List of indicators to collect data for.
-        :param start_year: Beginning year to collect data for.
-        :param end_year: Ending year to collect data for.
-        :return: Pandas DataFrame with columns: country_code, country_name, indicator_code, indicator_name, year, value
-        """
-        all_data = []
+        all_rows = []
+        # WB accepts ISO2 or ISO3; case-insensitive, but we'll standardize to lower
+        countries = [c.lower() for c in countries]
 
-        # Iterate through countries and indicators to construct API urls
         for country in countries:
             for indicator in indicators:
-                url = f"{self.base_url}/country/{country}/indicator/{indicator}"
+                page = 1
+                while True:
+                    url = f"{self.base_url}/country/{country}/indicator/{indicator}"
+                    params = {
+                        "date": f"{start_year}:{end_year}",  # <-- FIXED
+                        "format": "json",
+                        "per_page": 1000,
+                        "page": page,
+                    }
 
-                params = {
-                    'data': f"{start_year}:{end_year}",
-                    'format': 'json',
-                    'per_page': 1000,
-                }
+                    try:
+                        resp = requests.get(url, params=params, timeout=self.timeout)
+                        resp.raise_for_status()
+                        payload = resp.json()
 
-                try:
-                    response = requests.get(url, params=params)
-                    data = response.json()
+                        # payload is [meta, data]; data may be None if no observations
+                        if not isinstance(payload, list) or len(payload) < 2:
+                            break
 
-                    # WB WDI API returns [metadata, data]
-                    if len(data) > 1 and data[1]:
-                        for row in data[1]:
-                            # Extract relevant data
-                            all_data.append({
-                                'country_code': row['country']['id'],
-                                'country_name': row['country']['value'],
-                                'indicator_code': row['indicator']['id'],
-                                'indicator_name': row['indicator']['value'],
-                                'year': row['date'],
-                                'value': row['value']
+                        meta, data = payload[0], payload[1]
+                        if not data:
+                            break
+
+                        for row in data:
+                            all_rows.append({
+                                "country_code": row["country"]["id"],
+                                "country_name": row["country"]["value"],
+                                "indicator_code": row["indicator"]["id"],
+                                "indicator_name": row["indicator"]["value"],
+                                "year": row["date"],
+                                "value": row["value"],
                             })
-                except requests.exceptions.RequestException as e:
-                    print(f"Error fetching {indicator} for {country}: {e}")
 
-        return pd.DataFrame(all_data)
+                        # pagination
+                        total_pages = int(meta.get("pages", 1))
+                        if page >= total_pages:
+                            break
+                        page += 1
+
+                    except requests.exceptions.RequestException as e:
+                        print(f"Error fetching {indicator} for {country}: {e}")
+                        break
+
+        return pd.DataFrame(all_rows)

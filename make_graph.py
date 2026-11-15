@@ -60,16 +60,26 @@ class EconGraphBuilder:
 
     def _categorize_indicator(self, indicator_code: str) -> str:
         """Categorize indicators for better organization"""
-        if 'GDP' in indicator_code or 'MKTP' in indicator_code:
+        if any(code in indicator_code for code in ('GDP', 'MKTP')):
             return 'Growth'
-        elif 'CPI' in indicator_code or 'INF' in indicator_code:
+        elif any(code in indicator_code for code in ('CPI', 'INF')):
             return 'Inflation'
-        elif 'UEM' in indicator_code or 'EMP' in indicator_code:
+        elif any(code in indicator_code for code in ('UEM', 'EMP', 'TLF')):
             return 'Employment'
-        elif 'TRD' in indicator_code or 'EXP' in indicator_code or 'IMP' in indicator_code:
+        elif any(code in indicator_code for code in ('TRD', 'EXP', 'IMP', 'RSB', 'CAB')):
             return 'Trade'
-        elif 'DOD' in indicator_code or 'DEBT' in indicator_code:
+        elif any(code in indicator_code for code in ('DOD', 'DEBT', 'BAL', 'XPN', 'REV')):
             return 'Fiscal'
+        elif any(code in indicator_code for code in ('POP', 'CBRT', 'CDRT')):
+            return 'Population'
+        elif any(code in indicator_code for code in ('ADT', 'PRM', 'SE.XPD')):
+            return 'Education'
+        elif any(code in indicator_code for code in ('LE00', 'IMRT', 'CHEX')):
+            return 'Health'
+        elif any(code in indicator_code for code in ('USE', 'ATM', 'FEC')):
+            return 'Environment'
+        elif any(code in indicator_code for code in ('DINV', 'GDI')):
+            return 'Investment'
         else:
             return 'Other'
 
@@ -166,8 +176,8 @@ class EconGraphBuilder:
                 if counter % 100 == 0:
                     print(f"   Processed {counter}/{len(valid_data)} data points...")
 
-                # Final progress update
-                print(f"   Processed {len(valid_data)}/{len(valid_data)} data points...")
+            # Final progress update
+            print(f"   Processed {len(valid_data)}/{len(valid_data)} data points...")
 
         print("✓ Structured data nodes created successfully")
 
